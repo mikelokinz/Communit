@@ -29,7 +29,7 @@ export async function getSocket() {
 
   // Use the backend server IP in production; local development uses relative paths
   const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-  const socketUrl = isLocalhost ? "" : "https://communit.mikelokinz.workers.dev";
+  const socketUrl = isLocalhost ? "" : "https://communit-proxy.mikelokinz.workers.dev";
 
   socket = io(socketUrl, {
     auth: { token },
