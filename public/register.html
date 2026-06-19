@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Create your Communit account — start chatting and video calling with your team.">
+  <title>Register — Communit</title>
+  <link rel="stylesheet" href="./css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+  <div class="auth-page">
+    <div class="card card--static auth-card">
+      <div class="auth-header">
+        <a href="/" class="nav-brand" style="justify-content: center;">
+          <img class="nav-brand-icon" src="/logo.png" alt="Communit Logo">
+          <span class="nav-brand-text">COMMUNIT</span>
+        </a>
+        <h1 class="text-caps">CREATE ACCOUNT</h1>
+        <p>Join your community in seconds</p>
+      </div>
+
+      <div id="auth-error" class="auth-error"></div>
+
+      <form id="register-form" class="auth-form">
+        <div class="input-group">
+          <label class="input-label" for="name-input">DISPLAY NAME</label>
+          <input type="text" id="name-input" class="input" placeholder="Your name" autocomplete="name">
+        </div>
+
+
+
+          <div class="input-group">
+            <label class="input-label" for="user_name-input">USER NAME</label>
+            <input type="text" id="user_name-input" class="input" placeholder="Your User Name" autocomplete="name">
+          </div>
+
+          <div class="input-group">
+            <label class="input-label" for="email-input">EMAIL</label>
+            <input type="email" id="email-input" class="input" placeholder="you@example.com" required
+              autocomplete="email">
+          </div>
+
+          <div class="input-group">
+            <label class="input-label" for="password-input">PASSWORD</label>
+            <input type="password" id="password-input" class="input" placeholder="At least 6 characters" required
+              minlength="6" autocomplete="new-password">
+          </div>
+
+          <div class="input-group">
+            <label class="input-label" for="confirm-password-input">CONFIRM PASSWORD</label>
+            <input type="password" id="confirm-password-input" class="input" placeholder="Repeat your password" required
+              minlength="6" autocomplete="new-password">
+          </div>
+
+          <button type="submit" id="register-btn" class="btn-pill btn-pill--green w-full">
+            CREATE ACCOUNT
+          </button>
+        </form>
+
+        <div class="auth-footer">
+          Already have an account? <a href="/login.html">Sign in</a>
+        </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { register } from "/js/auth.js";
+
+    // Redirect if already logged in
+    if (localStorage.getItem("communit_token")) {
+      window.location.href = "/dashboard.html";
+    }
+
+    const form = document.getElementById("register-form");
+    const errorEl = document.getElementById("auth-error");
+    const registerBtn = document.getElementById("register-btn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorEl.classList.remove("visible");
+
+      const name = document.getElementById("name-input").value.trim();
+      const username = document.getElementById("user_name-input").value.trim();
+      const email = document.getElementById("email-input").value.trim();
+      const password = document.getElementById("password-input").value;
+      const confirmPassword = document.getElementById("confirm-password-input").value;
+
+      if (!username) {
+        errorEl.textContent = "User Name is required.";
+        errorEl.classList.add("visible");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        errorEl.textContent = "Passwords do not match.";
+        errorEl.classList.add("visible");
+        return;
+      }
+
+      registerBtn.disabled = true;
+      registerBtn.textContent = "CREATING ACCOUNT...";
+
+      try {
+        await register(name, username, email, password);
+        window.location.href = "/dashboard.html";
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.add("visible");
+        registerBtn.disabled = false;
+        registerBtn.textContent = "CREATE ACCOUNT";
+      }
+    });
+  </script>
+</body>
+
+</html>

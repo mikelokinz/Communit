@@ -1,0 +1,10 @@
+{
+  "cleanUrls": true,
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://100.79.116.71:3000/api/:path*"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Communit — Real-time collaborative communication platform. Chat, video call, and collaborate with your team.">
+  <title>Communit — Connect. Collaborate. Create.</title>
+  <link rel="stylesheet" href="./css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <section class="landing-hero">
+    <div class="nav-brand" style="margin-bottom: 3rem;">
+      <img class="nav-brand-icon" src="./logo.png" alt="Communit Logo">
+      <span class="nav-brand-text">COMMUNIT</span>
+    </div>
+
+    <h1 class="landing-tagline">
+      CONNECT WITH YOUR <span>COMMUNITY</span> IN REAL TIME
+    </h1>
+
+    <p class="landing-subtitle">
+      Chat, video call, share screens, transfer files, and collaborate on whiteboards — all from your browser, peer-to-peer.
+    </p>
+
+    <div class="landing-cta">
+      <a href="./register.html" class="btn-pill btn-pill--green">GET STARTED</a>
+      <a href="./login.html" class="btn-pill btn-pill--outline">LOGIN</a>
+    </div>
+
+    <div class="landing-features">
+      <div class="landing-feature">
+        <div class="landing-feature-icon" style="background: var(--accent-green-dim); color: var(--accent-green); display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-comments"></i></div>
+        <h4>REAL-TIME CHAT</h4>
+        <p>Instant messaging with full history and typing indicators.</p>
+      </div>
+      <div class="landing-feature">
+        <div class="landing-feature-icon" style="background: var(--accent-orange-dim); color: var(--accent-orange); display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-video"></i></div>
+        <h4>VIDEO CALLS</h4>
+        <p>Peer-to-peer HD video and audio calls. No plugins needed.</p>
+      </div>
+      <div class="landing-feature">
+        <div class="landing-feature-icon" style="background: var(--accent-green-dim); color: var(--accent-green); display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-users-gear"></i></div>
+        <h4>COLLABORATE</h4>
+        <p>Screen sharing, file transfer, and real-time whiteboards.</p>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Redirect to dashboard if already logged in
+    if (localStorage.getItem("communit_token")) {
+      window.location.href = "/dashboard.html";
+    }
+  </script>
+</body>
+</html>

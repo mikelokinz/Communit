@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Login to Communit — access your rooms, chats, and video calls.">
+  <title>Login — Communit</title>
+  <link rel="stylesheet" href="./css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+  <div class="auth-page">
+    <div class="card card--static auth-card">
+      <div class="auth-header">
+        <a href="/" class="nav-brand" style="justify-content: center;">
+          <img class="nav-brand-icon" src="/logo.png" alt="Communit Logo">
+          <span class="nav-brand-text">COMMUNIT</span>
+        </a>
+        <h1 class="text-caps">WELCOME BACK</h1>
+        <p>Sign in to continue to your rooms</p>
+      </div>
+
+      <div id="auth-error" class="auth-error"></div>
+
+      <form id="login-form" class="auth-form">
+        <div class="input-group">
+          <label class="input-label" for="email-input">USERNAME OR EMAIL</label>
+          <input type="text" id="email-input" class="input" placeholder="you@example.com or @username" required
+            autocomplete="email">
+        </div>
+
+
+
+        <div class="input-group">
+          <label class="input-label" for="password-input">PASSWORD</label>
+          <input type="password" id="password-input" class="input" placeholder="Enter your password" required
+            autocomplete="current-password">
+        </div>
+
+        <button type="submit" id="login-btn" class="btn-pill btn-pill--green w-full">
+          LOGIN
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        Don't have an account? <a href="/register.html">Create one</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { login } from "/js/auth.js";
+
+    // Redirect if already logged in
+    if (localStorage.getItem("communit_token")) {
+      window.location.href = "/dashboard.html";
+    }
+
+    const form = document.getElementById("login-form");
+    const errorEl = document.getElementById("auth-error");
+    const loginBtn = document.getElementById("login-btn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorEl.classList.remove("visible");
+      loginBtn.disabled = true;
+      loginBtn.textContent = "SIGNING IN...";
+
+      const email = document.getElementById("email-input").value.trim();
+      const password = document.getElementById("password-input").value;
+
+      try {
+        await login(email, password);
+        window.location.href = "/dashboard.html";
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.add("visible");
+        loginBtn.disabled = false;
+        loginBtn.textContent = "LOGIN";
+      }
+    });
+  </script>
+</body>
+
+</html>

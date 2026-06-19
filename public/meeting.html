@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Communit Video Meeting Room.">
+  <title>Meeting — Communit</title>
+  <link rel="stylesheet" href="./css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+</head>
+<body>
+
+  <div class="meeting-container">
+    
+    <!-- Topbar: Meeting Title & Code -->
+    <header class="meeting-topbar">
+      <div class="flex items-center">
+        <span id="meeting-title" class="meeting-topbar-title">Loading Meeting...</span>
+        <span id="meeting-code" class="meeting-topbar-code">meet-xxxxxxx</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btn-toggle-whiteboard" class="btn-pill btn-pill--outline btn-pill--sm" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;" title="Whiteboard">
+          <i class="fa-solid fa-chalkboard" style="margin-right: 0.25rem;"></i> Whiteboard
+        </button>
+        <button id="btn-toggle-sidebar" class="btn-pill btn-pill--outline btn-pill--sm" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;">
+          <i class="fa-solid fa-users" style="margin-right: 0.25rem;"></i> <span id="participant-count">1</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div style="flex: 1; display: flex; position: relative; overflow: hidden;">
+      
+      <!-- Video Grid Area -->
+      <main class="meeting-video-area">
+        <div id="video-grid" class="meeting-video-grid" data-count="1">
+          <!-- Local video and remote videos will be dynamically added as tiles -->
+        </div>
+      </main>
+
+      <!-- Whiteboard Overlay Workspace -->
+      <div id="meeting-whiteboard" class="meeting-whiteboard hidden" style="position: absolute; inset: 1rem; background: #FFFFFF; border-radius: var(--radius-card); z-index: 100; display: flex; flex-direction: column; color: #000; box-shadow: 0 12px 40px rgba(0,0,0,0.5); overflow: hidden; border: 2px solid var(--bg-card-hover);">
+        <button id="wb-toolbar-toggle" class="mobile-only" style="padding: 0.5rem; background: var(--bg-surface); color: var(--text-primary); border: none; border-bottom: 1px solid #EFEFEF; font-size: 0.8rem; font-weight: bold; cursor: pointer; text-align: center; width: 100%;"><i class="fa-solid fa-screwdriver-wrench"></i> Toggle Tools</button>
+        <!-- Toolbar -->
+        <div id="wb-toolbar-container" class="whiteboard-toolbar" style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; border-bottom: 2px solid #EFEFEF; background: #F8F9FA; flex-wrap: wrap; gap: 0.75rem; font-family: sans-serif;">
+          <!-- Tools Selector -->
+          <div class="flex items-center gap-1" style="display: flex; align-items: center; gap: 0.25rem;">
+            <button id="wb-tool-select" class="wb-tool-btn" title="Select / Move" style="padding: 0.4rem; border-radius: var(--radius-sm); border: 1.5px solid transparent; background: transparent; cursor: pointer; font-size: 1rem;"><i class="fa-solid fa-arrow-pointer"></i> Select</button>
+            <button id="wb-tool-pen" class="wb-tool-btn active" title="Pen / Brush" style="padding: 0.4rem; background: #EFEFEF; border-radius: var(--radius-sm); border: 1.5px solid #DDD; cursor: pointer; font-size: 1rem;"><i class="fa-solid fa-pen"></i> Pen</button>
+            <button id="wb-tool-eraser" class="wb-tool-btn" title="Eraser" style="padding: 0.4rem; border-radius: var(--radius-sm); border: 1.5px solid transparent; background: transparent; cursor: pointer; font-size: 1rem;"><i class="fa-solid fa-eraser"></i> Eraser</button>
+            <button id="wb-tool-text" class="wb-tool-btn" title="Text" style="padding: 0.4rem; border-radius: var(--radius-sm); border: 1.5px solid transparent; background: transparent; cursor: pointer; font-size: 1rem;"><i class="fa-solid fa-font"></i> Text</button>
+            <select id="wb-tool-shape" style="padding: 0.4rem; border-radius: var(--radius-sm); border: 1.5px solid #DDD; font-size: 0.85rem; cursor: pointer; outline: none; background: #FFF;">
+              <option value="none">Free Draw</option>
+              <option value="line">Line</option>
+              <option value="rect">Rectangle</option>
+              <option value="circle">Circle</option>
+            </select>
+          </div>
+          
+          <!-- Thickness and Colors -->
+          <div class="flex items-center gap-2" style="display: flex; align-items: center; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.25rem;">
+              <span style="font-size: 0.75rem; color: #555; font-weight: bold;">Size:</span>
+              <select id="wb-thickness" style="padding: 0.4rem; border-radius: var(--radius-sm); border: 1.5px solid #DDD; font-size: 0.8rem; background: #FFF;">
+                <option value="2">Thin (2px)</option>
+                <option value="5" selected>Medium (5px)</option>
+                <option value="10">Thick (10px)</option>
+                <option value="20">Extra Thick (20px)</option>
+              </select>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 0.25rem;">
+              <!-- 12 Color Swatches -->
+              <div class="wb-color-swatch active" data-color="#000000" style="width: 20px; height: 20px; border-radius: 50%; background: #000000; cursor: pointer; border: 2px solid #FFF; box-shadow: 0 0 0 2px #000;"></div>
+              <div class="wb-color-swatch" data-color="#FF4D4D" style="width: 20px; height: 20px; border-radius: 50%; background: #FF4D4D; cursor: pointer; border: 2px solid #FFF;"></div>
+              <div class="wb-color-swatch" data-color="#4ADE50" style="width: 20px; height: 20px; border-radius: 50%; background: #4ADE50; cursor: pointer; border: 2px solid #FFF;"></div>
+              <div class="wb-color-swatch" data-color="#FF8C42" style="width: 20px; height: 20px; border-radius: 50%; background: #FF8C42; cursor: pointer; border: 2px solid #FFF;"></div>
+              <div class="wb-color-swatch" data-color="#007BFF" style="width: 20px; height: 20px; border-radius: 50%; background: #007BFF; cursor: pointer; border: 2px solid #FFF;"></div>
+              <div class="wb-color-swatch" data-color="#8A2BE2" style="width: 20px; height: 20px; border-radius: 50%; background: #8A2BE2; cursor: pointer; border: 2px solid #FFF;"></div>
+              <div class="wb-color-swatch" data-color="#E83E8C" style="width: 20px; height: 20px; border-radius: 50%; background: #E83E8C; cursor: pointer; border: 2px solid #FFF;"></div>
+              <div class="wb-color-swatch" data-color="#17A2B8" style="width: 20px; height: 20px; border-radius: 50%; background: #17A2B8; cursor: pointer; border: 2px solid #FFF;"></div>
+              <div class="wb-color-swatch" data-color="#FFD700" style="width: 20px; height: 20px; border-radius: 50%; background: #FFD700; cursor: pointer; border: 2px solid #FFF;"></div>
+              <div class="wb-color-swatch" data-color="#8B4513" style="width: 20px; height: 20px; border-radius: 50%; background: #8B4513; cursor: pointer; border: 2px solid #FFF;"></div>
+              <div class="wb-color-swatch" data-color="#6C757D" style="width: 20px; height: 20px; border-radius: 50%; background: #6C757D; cursor: pointer; border: 2px solid #FFF;"></div>
+              <div class="wb-color-swatch" data-color="#212529" style="width: 20px; height: 20px; border-radius: 50%; background: #212529; cursor: pointer; border: 2px solid #FFF;"></div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center gap-1" style="display: flex; align-items: center; gap: 0.25rem;">
+            <button id="wb-undo" style="padding: 0.4rem 0.6rem; border-radius: var(--radius-sm); border: 1.5px solid #DDD; background: #FFF; font-size: 0.8rem; font-weight: bold; cursor: pointer;"><i class="fa-solid fa-rotate-left"></i> Undo</button>
+            <button id="wb-redo" style="padding: 0.4rem 0.6rem; border-radius: var(--radius-sm); border: 1.5px solid #DDD; background: #FFF; font-size: 0.8rem; font-weight: bold; cursor: pointer;"><i class="fa-solid fa-rotate-right"></i> Redo</button>
+            <button id="wb-delete" style="padding: 0.4rem 0.6rem; border-radius: var(--radius-sm); border: 1.5px solid #FF4D4D; background: transparent; color: #FF4D4D; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: none;"><i class="fa-solid fa-trash"></i> Delete</button>
+            <button id="wb-clear" style="padding: 0.4rem 0.6rem; border-radius: var(--radius-sm); border: 1.5px solid #FF4D4D; background: #FF4D4D; color: #FFF; font-size: 0.8rem; font-weight: bold; cursor: pointer;"><i class="fa-solid fa-trash-can"></i> Clear All</button>
+            <button id="wb-save" style="padding: 0.4rem 0.6rem; border-radius: var(--radius-sm); border: 1.5px solid #4ADE50; background: #4ADE50; color: #000; font-size: 0.8rem; font-weight: bold; cursor: pointer;"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+            <button id="wb-share" style="padding: 0.4rem 0.6rem; border-radius: var(--radius-sm); border: 1.5px solid #FF8C42; background: #FF8C42; color: #000; font-size: 0.8rem; font-weight: bold; cursor: pointer;"><i class="fa-solid fa-share-nodes"></i> Share</button>
+            <button id="wb-close" style="padding: 0.4rem 0.6rem; border-radius: var(--radius-sm); border: 1.5px solid #DDD; background: #FFF; font-size: 0.8rem; font-weight: bold; cursor: pointer; margin-left: 0.5rem;"><i class="fa-solid fa-xmark"></i> Close</button>
+          </div>
+        </div>
+        
+        <!-- Canvas wrapper -->
+        <div id="whiteboard-canvas-container" style="flex: 1; position: relative; background: #FFFFFF; overflow: hidden; cursor: crosshair;">
+          <canvas id="whiteboard-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block;"></canvas>
+          <!-- Text Input Overlay for placing text -->
+          <input type="text" id="wb-text-input" class="hidden" style="position: absolute; border: 1.5px dashed var(--accent-green); outline: none; background: transparent; color: #000; font-family: sans-serif; font-size: 16px; padding: 2px 4px; z-index: 101; font-weight: bold;">
+        </div>
+      </div>
+
+      <aside id="meeting-sidebar" class="meeting-sidebar hidden">
+        <div class="meeting-sidebar-header">
+          <span>Participants</span>
+          <button id="btn-close-sidebar" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem;">✕</button>
+        </div>
+        
+        <!-- Invite Section -->
+        <div class="meeting-sidebar-invite" style="padding: 1rem; border-bottom: 1px solid #1A1A1A; position: relative;">
+          <div class="input-group" style="margin: 0; position: relative;">
+            <label class="input-label" style="font-size: 0.65rem;">INVITE MEMBER BY USERNAME</label>
+            <div class="flex gap-1">
+              <input type="text" id="invite-username-input" class="input" placeholder="username" autocomplete="off" style="font-size: 0.75rem; padding: 0.4rem 0.6rem; height: 32px; border-radius: var(--radius-sm);">
+              <button type="button" id="btn-invite-member" class="btn-pill btn-pill--green btn-pill--sm" style="padding: 0 0.75rem; border-radius: var(--radius-sm); height: 32px; font-size: 0.7rem;">INVITE</button>
+            </div>
+            <div id="invite-username-suggestions" class="suggestions-dropdown hidden" style="top: 100%; left: 0; right: 0;"></div>
+          </div>
+        </div>
+
+        <div id="meeting-sidebar-list" class="meeting-sidebar-list">
+          <!-- Participant items go here -->
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- Bottom Control Bar -->
+    <footer class="meeting-toolbar">
+      <button id="btn-toggle-mic" class="meeting-toolbar-btn active" title="Toggle Microphone"><i class="fa-solid fa-microphone"></i></button>
+      <button id="btn-toggle-cam" class="meeting-toolbar-btn active" title="Toggle Camera"><i class="fa-solid fa-video"></i></button>
+      <button id="btn-share-screen" class="meeting-toolbar-btn" title="Share Screen"><i class="fa-solid fa-display"></i></button>
+      <button id="btn-annotate-screen" class="meeting-toolbar-btn hidden" title="Annotate Screen" style="border-color: var(--accent-green);"><i class="fa-solid fa-pen"></i></button>
+      <button id="btn-leave-meeting" class="meeting-toolbar-btn btn-end" title="Leave Meeting"><i class="fa-solid fa-xmark"></i></button>
+    </footer>
+
+  </div>
+
+  <!-- DM Share Modal -->
+  <div id="wb-share-modal" class="modal-overlay" style="z-index: 2000;">
+    <div class="modal" style="max-width: 400px; background: var(--bg-card); color: var(--text-primary); border: 1.5px solid var(--bg-card-hover); border-radius: var(--radius-card); padding: 1.5rem; box-shadow: 0 12px 40px rgba(0,0,0,0.6);">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: none!important; padding: 0!important;">
+        <h3 class="text-caps" style="font-size: 1rem; color: var(--accent-orange); margin: 0;">Share Whiteboard</h3>
+        <button id="wb-share-modal-close" class="modal-close" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Select DM contact to share this whiteboard image:</div>
+      <div id="wb-share-contacts-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; background: var(--bg-input); padding: 0.75rem; border-radius: var(--radius-input); margin-bottom: 1.5rem;">
+        <span class="text-muted" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">Loading contacts...</span>
+      </div>
+      <button id="wb-share-send-btn" class="btn-pill btn-pill--green w-full" style="height: 44px; font-weight: bold;">SEND TO CHAT</button>
+    </div>
+  </div>
+
+  <script type="module" src="/js/meeting.js"></script>
+</body>
+</html>

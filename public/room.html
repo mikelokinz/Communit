@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Communit Chat Room — real-time messaging with your team.">
+  <title>Room — Communit</title>
+  <link rel="stylesheet" href="./css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="nav-bar">
+    <div class="flex items-center gap-2">
+      <a href="/dashboard.html" class="btn-pill btn-pill--ghost btn-pill--sm" style="font-size: 1.1rem; padding: 0.4rem 0.75rem; display: flex; align-items: center; justify-content: center;">
+        <i class="fa-solid fa-arrow-left"></i>
+      </a>
+      <div class="nav-brand">
+        <img class="nav-brand-icon" src="/logo.png" alt="Communit Logo">
+        <span id="room-name" class="nav-brand-text" style="font-size: 0.95rem;">LOADING...</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- Call Actions -->
+      <button id="btn-join-video" class="btn-pill btn-pill--outline btn-pill--sm"><i class="fa-solid fa-video" style="margin-right: 0.25rem;"></i> VIDEO</button>
+      <button id="btn-join-audio" class="btn-pill btn-pill--outline btn-pill--sm"><i class="fa-solid fa-phone" style="margin-right: 0.25rem;"></i> AUDIO</button>
+      <button id="btn-leave-call" class="btn-pill btn-pill--outline btn-pill--sm hidden" style="color: var(--accent-orange); border-color: var(--accent-orange-dim);"><i class="fa-solid fa-phone-slash" style="margin-right: 0.25rem;"></i> LEAVE</button>
+      <button id="btn-delete-room" class="btn-pill btn-pill--danger btn-pill--sm hidden"><i class="fa-solid fa-trash" style="margin-right: 0.25rem;"></i> DELETE</button>
+
+      <div id="participant-avatars" class="flex" style="gap: 0.25rem; margin-left: 0.5rem;"></div>
+      <span id="participant-count" class="badge badge--green"></span>
+    </div>
+  </nav>
+
+  <!-- Room Layout -->
+  <div class="room-layout" style="display: flex; flex-direction: column; height: calc(100vh - 64px); overflow: hidden;">
+    
+    <!-- Video Call Grid -->
+    <div id="video-grid" class="video-grid hidden" style="display: none; padding: 1rem; gap: 1rem; background: var(--bg-card); flex-wrap: wrap; justify-content: center; overflow-y: auto;">
+      <!-- Videos will be injected here -->
+    </div>
+
+    <!-- Chat Container -->
+    <div class="chat-container" style="flex: 1; display: flex; flex-direction: column;">
+    <div id="chat-messages" class="chat-messages">
+      <!-- Loader shown while loading history -->
+      <div id="chat-loader" class="loader" style="margin: auto;">
+        <div class="loader-dot"></div>
+        <div class="loader-dot"></div>
+        <div class="loader-dot"></div>
+      </div>
+    </div>
+
+    <!-- Typing Indicator -->
+    <div id="typing-indicator" class="typing-indicator"></div>
+
+    <!-- Input Bar -->
+    <div class="chat-input-bar">
+      <input
+        type="text"
+        id="chat-input"
+        class="chat-input"
+        placeholder="Type a message..."
+        autocomplete="off"
+      >
+      <button id="chat-send-btn" class="btn-pill btn-pill--green">
+        SEND
+      </button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { authGuard, authFetch, getCurrentUser, getUserInitials } from "/js/auth.js";
+    import { initChat, destroyChat } from "/js/chat.js";
+    import { initWebRTC, destroyWebRTC } from "/js/webrtc.js";
+
+    // Auth guard
+    if (!authGuard()) {
+      throw new Error("Not authenticated");
+    }
+
+    const currentUser = getCurrentUser();
+
+    // Parse room info from URL
+    const params = new URLSearchParams(window.location.search);
+    const roomSlug = params.get("slug");
+    const roomId = params.get("id");
+
+    if (!roomSlug || !roomId) {
+      window.location.href = "/dashboard.html";
+      throw new Error("Missing room parameters");
+    }
+
+    // Load room details
+    async function loadRoom() {
+      try {
+        const res = await authFetch(`/api/rooms/${roomSlug}`);
+        if (!res) return;
+
+        const data = await res.json();
+        const room = data.room;
+
+        if (!room) {
+          window.location.href = "/dashboard.html";
+          return;
+        }
+
+        // Update room name in nav
+        const nameEl = document.getElementById("room-name");
+        
+        let displayName = room.name;
+        if (room.type === "DIRECT") {
+          const otherUser = room.participants.find(p => p.userId !== currentUser.id)?.user;
+          if (otherUser) displayName = otherUser.name || otherUser.email;
+        }
+
+        if (nameEl) nameEl.textContent = displayName.toUpperCase();
+
+        // Update page title
+        document.title = `${displayName} — Communit`;
+
+        // Render participant avatars
+        const avatarsEl = document.getElementById("participant-avatars");
+        const countEl = document.getElementById("participant-count");
+
+        if (avatarsEl && room.participants) {
+          avatarsEl.innerHTML = "";
+          const display = room.participants.slice(0, 5);
+          display.forEach((p, i) => {
+            const div = document.createElement("div");
+            div.className = `avatar avatar--sm ${i % 2 === 0 ? 'avatar--green' : 'avatar--orange'}`;
+            div.textContent = getUserInitials(p.user);
+            div.title = p.user.name || p.user.email;
+            avatarsEl.appendChild(div);
+          });
+        }
+
+        if (countEl && room.participants) {
+          countEl.textContent = `${room.participants.length} online`;
+        }
+
+        // Show delete button if host
+        const currentUserParticipant = room.participants.find(p => p.userId === currentUser.id);
+        if (currentUserParticipant && currentUserParticipant.role === "HOST") {
+          const deleteBtn = document.getElementById("btn-delete-room");
+          if (deleteBtn) {
+            deleteBtn.classList.remove("hidden");
+            deleteBtn.onclick = async () => {
+              const confirmMsg = room.type === "DIRECT"
+                ? "Are you sure you want to delete this direct message? This will delete the entire chat history for both participants."
+                : "Are you sure you want to delete this group? This will delete the group and all its message history for all members.";
+              
+              if (confirm(confirmMsg)) {
+                try {
+                  const deleteRes = await authFetch(`/api/rooms/${room.id}`, {
+                    method: "DELETE"
+                  });
+                  if (deleteRes && deleteRes.ok) {
+                    window.location.href = "/dashboard.html";
+                  } else {
+                    const errData = await deleteRes.json();
+                    alert(errData.error || "Failed to delete room.");
+                  }
+                } catch (err) {
+                  console.error("Failed to delete room:", err);
+                  alert("Failed to delete room.");
+                }
+              }
+            };
+          }
+        }
+
+        // Hide loader and init chat
+        const loader = document.getElementById("chat-loader");
+        if (loader) loader.remove();
+
+        initChat(roomId);
+        initWebRTC(roomId);
+
+      } catch (error) {
+        console.error("[Room] Failed to load room:", error);
+      }
+    }
+
+    loadRoom();
+
+    // Cleanup on page unload
+    window.addEventListener("beforeunload", () => {
+      destroyChat();
+      destroyWebRTC();
+    });
+  </script>
+</body>
+</html>
