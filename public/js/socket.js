@@ -27,9 +27,7 @@ export async function getSocket() {
     throw new Error("No auth token available for socket connection.");
   }
 
-  // Use the backend server IP in production; local development uses relative paths
-  const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-  const socketUrl = isLocalhost ? "" : "https://communit-proxy.mikelokinz.workers.dev";
+  const socketUrl = "";
 
   socket = io(socketUrl, {
     auth: { token },

@@ -18,11 +18,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+// This tells your backend to serve any HTML/CSS/JS files placed in a folder named 'public'
+app.use(express.static('public'));
 const httpServer = createServer(app);
 const port = parseInt(process.env.PORT || "3000", 10);
 
 // Middleware
-app.use(cors());
+/*
+// Allow Netlify to communicate with backend
+app.use(cors({
+  origin: "https://communitat.netlify.app", // Your exact live frontend URL
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization", "ngrok-skip-browser-warning"]
+}));
+*/
 app.use(express.json({ limit: "50mb" }));
 app.use(setupResponseNameFormatter);
 
